@@ -4,6 +4,8 @@ Created on 31.10.2016
 '''
 import matplotlib.pyplot as plt
 import numpy as np
+from scipy.optimize.zeros import newton
+
 
 def get_bond_slip(s_arr, tau_pi_bar=10, Ad=0.5, s0=5e-3, G=36000.0):
     '''for plotting the bond slip relationship-Non analytical
@@ -58,7 +60,7 @@ def get_bond_slip(s_arr, tau_pi_bar=10, Ad=0.5, s0=5e-3, G=36000.0):
 
         if fw > 1e-8:
             dw = 0
-            f_dw = dw - G * (s_i **2) * Ad * (1 + z_i - dw)**2 
+            f_dw = dw - G * (s_i )*(s_i - s_arr[i-1]) * Ad * (1 + z_i - dw)**2 
             # implicit equation of damage evolution
             while abs(f_dw) > 1e-10:
              #Newton-Raphson scheme
@@ -112,30 +114,19 @@ if __name__ == '__main__':
 
     s_arr, tau_arr, tau_pi_arr, w_arr, xs_pi_arr = get_bond_slip(
         s_arr, tau_pi_bar=5, Ad=0.05, s0=5e-3, G=6000)
-    plt.subplot(221)
+    plt.subplot(121)
     plt.plot(s_arr, tau_arr)  # , label='stress')
     plt.plot(s_arr, tau_pi_arr)  # , label='sliding stress')
     plt.xlabel('slip')
     plt.ylabel('stress')
     plt.legend()
-    plt.subplot(222)
+    plt.subplot(122)
     plt.plot(s_arr, w_arr)
     plt.ylim(0, 1)
     plt.xlabel('slip')
     plt.ylabel('damage')
     plt.legend()
     
-    plt.subplot(223)
-    plt.plot(s_arr, xs_pi_arr)
-    plt.xlabel('slip')
-    plt.ylabel('sliding slip')
-    plt.legend()
-    
-    plt.subplot(224)
-    plt.plot(xs_pi_arr, tau_pi_arr)
-    plt.xlabel('sliding slip')
-    plt.ylabel('sliding stress')
-    plt.legend()
-    # plt.ylim(s_arr[0], s_arr[-1])
+   
     plt.show()
 
