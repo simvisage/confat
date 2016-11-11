@@ -2,6 +2,8 @@
 Created on 31.10.2016
 
 '''
+from scipy.optimize import newton
+
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -44,6 +46,13 @@ def get_bond_slip(s_arr, tau_pi_bar=10, Ad=0.5, s0=5e-3, G=36000.0):
     w_i = 0.  # damage
     X_i = gamma * alpha_i
 
+    def Fw(s_i, s_pi_i, w_i, dw):
+        Yw_i = 0.5 * G * s_i ** 2
+        Ypi_i = 0.5 * G * (s_i - s_pi_i) ** 2
+        Y_i = Yw_i + Ypi_i
+        fw = Yw_i - (Y0 + Z(z_i))
+        return fw
+
     for i in range(1, len(s_arr)):
         print 'increment', i
         s_i = s_arr[i]
@@ -55,9 +64,12 @@ def get_bond_slip(s_arr, tau_pi_bar=10, Ad=0.5, s0=5e-3, G=36000.0):
         fw = Yw_i - (Y0 + Z(z_i))
         #fw = Y_i - (Y0 + Z(z_i))
         # in case damage is activated
+        fw_newton = Fw(s_i, xs_pi_i, w_i, 0)
+        print 'fw', fw, fw_newton
 
         if fw > 1e-8:
             dw = 0
+            dw_newton = newton(lambda dw: Fw(s_i, xs_pi_i, w_i, dw), 0)
             f_dw = dw - G * (s_i ** 2) * Ad * (1 + z_i - dw)**2
             # implicit equation of damage evolution
             it = 0
@@ -69,6 +81,7 @@ def get_bond_slip(s_arr, tau_pi_bar=10, Ad=0.5, s0=5e-3, G=36000.0):
                 d_f_dw = 1 + 2 * G * (s_i ** 2) * Ad * (1 + z_i - dw)
                 dw_new = dw - (f_dw / d_f_dw)
                 dw = dw_new
+            print 'obtained', dw, dw_newton
 
             w_i = w_i + dw
             z_i = -w_i
