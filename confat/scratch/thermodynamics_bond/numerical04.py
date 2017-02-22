@@ -91,14 +91,14 @@ def get_bond_slip(s_arr, tau_pi_bar=10, Ad=0.5, s0=5e-3, G=36000.0):
 
 
 if __name__ == '__main__':
-    s_levels = np.linspace(0, 100e-3, 30)
+    s_levels = np.linspace(0, 200e-3, 2)
 #     s_levels = np.linspace(10e-3, 10e-3, 10)
     s_levels[0] = 0
     s_levels.reshape(-1, 2)[:, 0] *= -1
     s_history = s_levels.flatten()
 
     # slip array as input
-    s_arr = np.hstack([np.linspace(s_history[i], s_history[i + 1], 120)
+    s_arr = np.hstack([np.linspace(s_history[i], s_history[i + 1], 1000)
                        for i in range(len(s_levels) - 1)])
 
     s_arr, tau_arr, tau_pi_arr, w_arr, xs_pi_arr = get_bond_slip(
