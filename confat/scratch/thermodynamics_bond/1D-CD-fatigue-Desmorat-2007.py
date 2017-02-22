@@ -15,7 +15,7 @@ def get_bond_slip(eps_arr, sigma_s, C , K , S , E1 , E2):
     sigma_pi_arr = np.zeros_like(eps_arr)
     # damage factor
     w_arr = np.zeros_like(eps_arr)
-    # sliding slip
+    # sliding strain
     eps_pi_arr = np.zeros_like(eps_arr)
     # max strain
     eps_max = np.zeros_like(eps_arr)

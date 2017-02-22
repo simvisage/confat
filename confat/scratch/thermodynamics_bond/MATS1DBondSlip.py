@@ -12,7 +12,7 @@ from scipy.optimize import newton
 class MATS1DBondSlip():
   
     G = 6000
-    gamma = 0
+    gamma = 100
     Ad = 0.05
     tau_pi_bar = 5
     s0 = 5e-3
@@ -31,7 +31,7 @@ class MATS1DBondSlip():
         
         f_pi = np.fabs(tau_pi - X) - self.tau_pi_bar
     
-        if f_pi > 1e-8:
+        if f_pi > 1e-6:
             # Return mapping 
             delta_lamda = f_pi / (w * self.G + self.gamma)
             # update variables
@@ -54,11 +54,11 @@ class MATS1DBondSlip():
     
         if f_pi > 1e-6:
             # Return mapping 
-            delta_lamda_pi = f_pi / (self.G + self.gamma + (1 / (self.Ad * (1 + z) ** 2)))
+            delta_lamda_pi = f_pi / (w * self.G + self.gamma ) #+ (1 / (self.Ad * (1 + z) ** 2)))
             # update all the state variables
             xs_pi = xs_pi + delta_lamda_pi * np.sign(tau_pi - X)
             X = X + self.gamma * delta_lamda_pi * np.sign(tau_pi - X)
-            alpha = alpha + xs_pi
+            alpha = alpha + delta_lamda_pi * np.sign(tau_pi - X)
             
             self.sctx[0] = xs_pi
             self.sctx[1] = X
