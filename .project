@@ -3,6 +3,7 @@
 	<name>confat</name>
 	<comment></comment>
 	<projects>
+		<project>ibvpy</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>
