@@ -37,7 +37,7 @@ def get_bond_slip():
     # shear modulus [MPa]
     G = 36000.0
     # damage - brittleness [MPa^-1]
-    Ad = 1.0
+    Ad = 1
     # Kinematic hardening modulus [MPa]
     gamma = 10
     # constant in the sliding threshold functio

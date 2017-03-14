@@ -3,6 +3,10 @@
 	<name>confat</name>
 	<comment></comment>
 	<projects>
+<<<<<<< HEAD
+=======
+		<project>cbfe</project>
+>>>>>>> branch 'master' of https://github.com/simvisage/confat.git
 		<project>ibvpy</project>
 	</projects>
 	<buildSpec>

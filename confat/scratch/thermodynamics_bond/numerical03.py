@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.optimize import newton 
 
-def get_bond_slip(s_arr, tau_pi_bar=10, Ad=0.5, s0=5e-3, G=36000.0):
+def get_bond_slip(s_arr, tau_pi_bar=5, Ad=0.5, s0=5e-3, G=6000.0):
     '''for plotting the bond slip relationship-Non analytical
     '''
     # arrays to store the values
@@ -44,37 +44,37 @@ def get_bond_slip(s_arr, tau_pi_bar=10, Ad=0.5, s0=5e-3, G=36000.0):
     z_i = 0.
     w_i = 0.  # damage
     X_i = gamma * alpha_i
-    N_w_i =0
+    N_w_i = 0
 
     for i in range(1, len(s_arr)):
         print 'increment', i
         s_i = s_arr[i]
-        #ds_i = s_i - s_arr[i - 1]
+        # ds_i = s_i - s_arr[i - 1]
         Yw_i = 0.5 * G * s_i ** 2
         # damage threshold function
         Ypi_i = 0.5 * G * (s_i - xs_pi_i) ** 2
         Y_i = Yw_i + Ypi_i
         fw = Yw_i - (Y0 + Z(z_i))
-        #fw = Y_i - (Y0 + Z(z_i))
+        # fw = Y_i - (Y0 + Z(z_i))
         # in case damage is activated
 
         if fw > 1e-8:
             
-            #Using Scipy.Optimize.Newton
-            f_dw_n = lambda dw_n :  dw_n - G * (s_i )* (s_i - s_arr[i-1]) * Ad * (1 + z_i - dw_n)**2 
-            f_dw_n2 = lambda dw_n : 1 + 2 * G * (s_i **2) * Ad * (1 + z_i - dw_n) 
-            dw_n = newton(f_dw_n, 0.,fprime = f_dw_n2 , tol=1e-8, maxiter=40)
+            # Using Scipy.Optimize.Newton
+            f_dw_n = lambda dw_n :  dw_n - G * (s_i) * (s_i - s_arr[i - 1]) * Ad * (1 + z_i - dw_n) ** 2 
+            f_dw_n2 = lambda dw_n : 1 + 2 * G *  (s_i) * (s_i - s_arr[i - 1]) * Ad * (1 + z_i - dw_n) 
+            dw_n = newton(f_dw_n, 0., fprime=f_dw_n2 , tol=1e-8, maxiter=50)
             print 'NonL-dw_newton = ', dw_n
             
-            #Using normal Newton-Raphson
+            # Using normal Newton-Raphson
             dw = 0
             it = 0
-            f_dw = dw - G * (s_i )* (s_i - s_arr[i-1]) * Ad * (1 + z_i- dw)**2 
-            while abs(f_dw) > 1e-8:
-                it +=1
-                f_dw = dw - G * (s_i )*(s_i - s_arr[i-1]) * Ad * (1 + z_i- dw)**2
-                d_f_dw = 1 + 2 * G * (s_i **2) * Ad * (1 + z_i - dw) 
-                dw_new =  dw - (f_dw/d_f_dw)
+            f_dw = dw - G * (s_i) * (s_i - s_arr[i - 1]) * Ad * (1 + z_i - dw) ** 2 
+            while abs(f_dw) > 1e-6:
+                it += 1
+                f_dw = dw - G * (s_i) * (s_i - s_arr[i - 1]) * Ad * (1 + z_i - dw) ** 2
+                d_f_dw = 1 + 2 * G * (s_i - s_arr[i - 1]) * Ad * (1 + z_i - dw) 
+                dw_new = dw - (f_dw / d_f_dw)
                 dw = dw_new
              
             print 'NonL-dw = ', dw
@@ -94,7 +94,7 @@ def get_bond_slip(s_arr, tau_pi_bar=10, Ad=0.5, s0=5e-3, G=36000.0):
             # Return mapping
             d_lamda = f_pi_i / (w_i * G + gamma)
             tau_pi_i = tau_pi_i - w_i * G * d_lamda * np.sign(tau_pi_i - X_i)
-            xs_pi_i = s_i -(tau_pi_i / (w_i * G))
+            xs_pi_i = s_i - (tau_pi_i / (w_i * G))
             X_i = X_i + gamma * d_lamda * np.sign(tau_pi_i - X_i)
               
         # update all the state variables
@@ -105,25 +105,25 @@ def get_bond_slip(s_arr, tau_pi_bar=10, Ad=0.5, s0=5e-3, G=36000.0):
         w_arr[i] = w_i
         xs_pi_arr[i] = xs_pi_i
         
-        #print 'stress =',tau
-        #print 'sliding - stress =',tau_pi_i
-        #print 'strain =', s_i
-        #print 'sliding strain ' , xs_pi_i
-        #print 'total strain ' , s_i
+        # print 'stress =',tau
+        # print 'sliding - stress =',tau_pi_i
+        # print 'strain =', s_i
+        # print 'sliding strain ' , xs_pi_i
+        # print 'total strain ' , s_i
         print '------------------------ ' 
 
     return s_arr, tau_arr, tau_pi_arr, w_arr, xs_pi_arr
 
 
 if __name__ == '__main__':
-    s_levels = np.linspace(0, 100e-3, 30)
+    s_levels = np.linspace(0, 250e-3, 2)
 #     s_levels = np.linspace(10e-3, 10e-3, 10)
     s_levels[0] = 0
-    s_levels.reshape(-1, 2)[:, 0] *= -1
+    s_levels.reshape(-1, 2)[:, 0] *= 0
     s_history = s_levels.flatten()
 
     # slip array as input
-    s_arr = np.hstack([np.linspace(s_history[i], s_history[i + 1], 120)
+    s_arr = np.hstack([np.linspace(s_history[i], s_history[i + 1], 5)
                        for i in range(len(s_levels) - 1)])
     s_arr, tau_arr, tau_pi_arr, w_arr, xs_pi_arr = get_bond_slip(
         s_arr, tau_pi_bar=5, Ad=0.05, s0=5e-3, G=6000)
