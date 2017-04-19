@@ -3,6 +3,8 @@ Created on 12.01.2016
 
 @author: Yingxiong
 '''
+from math import *
+
 from matplotlib.figure import Figure
 from scipy.interpolate import interp1d
 from traits.api import \
@@ -11,64 +13,60 @@ from traits.api import \
 from traitsui.api import \
     View, Item, Group, VGroup, HSplit, TreeEditor, TreeNode
 
-from matsevalfatigue import MATSEvalFatigue
-from fets1d52ulrhfatigue import FETS1D52ULRHFatigue
-from ibvpy.api import BCDof 
-import numpy as np
-from math import*
-from mpl_figure_editor import MPLFigureEditor
-from Tloop import TLoop
 from TStepper import TStepper
-import matplotlib.gridspec as gridspec
+from Tloop import TLoop
+from fets1d52ulrhfatigue import FETS1D52ULRHFatigue
+from ibvpy.api import BCDof
+from matsevalfatigue import MATSEvalFatigue
+import numpy as np
+from util.traits.editors import MPLFigureEditor
+
 
 class Material(HasTraits):
-    
+
     name = Str('<unknown>')
     E_b = Float(2000,
-                    label="E_b ",
-                    desc="Bond Stiffness",
-                    enter_set=True,
-                    auto_set=False)
-    
-    gamma = Float(0,
-                    label="Gamma ",
-                    desc="Kinematic hardening modulus",
-                    enter_set=True,
-                    auto_set=False)
-    
-    K = Float(0,
-                    label="K ",
-                    desc="Isotropic harening",
-                    enter_set=True,
-                    auto_set=False)
-    
-    S = Float(1.0,
-                    label="S ",
-                    desc="Damage cumulation parameter",
-                    enter_set=True,
-                    auto_set=False)
-    
-    r = Float(1,
-                    label="r ",
-                    desc="Damage cumulation parameter",
-                    enter_set=True,
-                    auto_set=False)
-    
-    tau_pi_bar = Float(5,
-                    label="Tau_pi_bar ",
-                    desc="Reversibility limit",
-                    enter_set=True,
-                    auto_set=False)
-    
-    
+                label="E_b ",
+                desc="Bond Stiffness",
+                enter_set=True,
+                auto_set=False)
 
-    
+    gamma = Float(0,
+                  label="Gamma ",
+                  desc="Kinematic hardening modulus",
+                  enter_set=True,
+                  auto_set=False)
+
+    K = Float(0,
+              label="K ",
+              desc="Isotropic harening",
+              enter_set=True,
+              auto_set=False)
+
+    S = Float(1.0,
+              label="S ",
+              desc="Damage cumulation parameter",
+              enter_set=True,
+              auto_set=False)
+
+    r = Float(1,
+              label="r ",
+              desc="Damage cumulation parameter",
+              enter_set=True,
+              auto_set=False)
+
+    tau_pi_bar = Float(5,
+                       label="Tau_pi_bar ",
+                       desc="Reversibility limit",
+                       enter_set=True,
+                       auto_set=False)
+
     view = View(VGroup(Group(Item('E_b'),
-               Item('tau_pi_bar'), show_border=True, label='Bond Stiffness and reversibility limit'),
-               Group(Item('gamma'),
-               Item('K'), show_border=True , label='Hardening parameters'),
-               Group(Item('S'),
-               Item('r'), show_border=True , label='Damage cumulation parameters')))
+                             Item('tau_pi_bar'), show_border=True, label='Bond Stiffness and reversibility limit'),
+                       Group(Item('gamma'),
+                             Item('K'), show_border=True, label='Hardening parameters'),
+                       Group(Item('S'),
+                             Item('r'), show_border=True, label='Damage cumulation parameters')))
 
 
 class Geometry(HasTraits):
@@ -85,66 +83,68 @@ class LoadingSenario(HasTraits):
     number_of_cycles = Float(1.0)
     maximum_slip = Float(0.2)
     number_of_increments = Float(10)
-    loading_type = Enum ("Monotonic", "Cyclic")
-    amplitude_type = Enum ("Increased_Amplitude", "Constant_Amplitude")
-    loading_range = Enum("Non_symmetric" , "Symmetric" )
+    loading_type = Enum("Monotonic", "Cyclic")
+    amplitude_type = Enum("Increased_Amplitude", "Constant_Amplitude")
+    loading_range = Enum("Non_symmetric", "Symmetric")
 
     d_t = Float(0.005)
     t_max = Float(1.)
     k_max = Float(100)
     tolerance = Float(1e-4)
-    
-    d_array = Property(depends_on=' maximum_slip , number_of_cycles , loading_type , loading_range , amplitude_type ')
+
+    d_array = Property(
+        depends_on=' maximum_slip , number_of_cycles , loading_type , loading_range , amplitude_type ')
+
     @cached_property
     def _get_d_array(self):
-        
+
         if self.loading_type == "Monotonic":
             self.number_of_cycles = 1
-        d_levels = np.linspace(0, self.maximum_slip, self.number_of_cycles * 2)  
-        d_levels[0] = 0       
-        
+        d_levels = np.linspace(0, self.maximum_slip, self.number_of_cycles * 2)
+        d_levels[0] = 0
+
         if self.amplitude_type == "Increased_Amplitude" and self.loading_range == "Symmetric":
             d_levels.reshape(-1, 2)[:, 0] *= -1
             d_history = d_levels.flatten()
             d_arr = np.hstack([np.linspace(d_history[i], d_history[i + 1], self.number_of_increments)
-                       for i in range(len(d_levels) - 1)])
-            
+                               for i in range(len(d_levels) - 1)])
+
             return d_arr
-        
+
         if self.amplitude_type == "Increased_Amplitude" and self.loading_range == "Non_symmetric":
             d_levels.reshape(-1, 2)[:, 0] *= 0
             d_history = d_levels.flatten()
             d_arr = np.hstack([np.linspace(d_history[i], d_history[i + 1], self.number_of_increments)
-                       for i in range(len(d_levels) - 1)])
-            
+                               for i in range(len(d_levels) - 1)])
+
             return d_arr
-        
+
         if self.amplitude_type == "Constant_Amplitude" and self.loading_range == "Symmetric":
             d_levels.reshape(-1, 2)[:, 0] = -self.maximum_slip
-            d_levels[0] = 0 
+            d_levels[0] = 0
             d_levels.reshape(-1, 2)[:, 1] = self.maximum_slip
             d_history = d_levels.flatten()
             d_arr = np.hstack([np.linspace(d_history[i], d_history[i + 1], self.number_of_increments)
-                       for i in range(len(d_levels) - 1)])
-            
+                               for i in range(len(d_levels) - 1)])
+
             return d_arr
-       
+
         if self.amplitude_type == "Constant_Amplitude" and self.loading_range == "Non_symmetric":
             d_levels.reshape(-1, 2)[:, 0] *= 0
             d_levels.reshape(-1, 2)[:, 1] = self.maximum_slip
             s_history = d_levels.flatten()
             d_arr = np.hstack([np.linspace(s_history[i], s_history[i + 1], self.number_of_increments)
-                       for i in range(len(d_levels) - 1)])
-            
-            return d_arr 
-        
+                               for i in range(len(d_levels) - 1)])
+
+            return d_arr
+
     time_func = Property(depends_on='maximum_slip, t_max , d_array ')
 
     @cached_property
     def _get_time_func(self):
-        t_arr = np.linspace(0, self.t_max , len(self.d_array))
+        t_arr = np.linspace(0, self.t_max, len(self.d_array))
         return interp1d(t_arr, self.d_array)
-    
+
     figure = Instance(Figure)
 
     def _figure_default(self):
@@ -161,24 +161,21 @@ class LoadingSenario(HasTraits):
         ax.set_xlabel('time')
         ax.set_ylabel('displacement')
         self.figure.canvas.draw()
-    
-  
 
     view = View(VGroup(Group(Item('loading_type')),
-                Group(Item('maximum_slip'),
-                      Item('number_of_increments')),
-               Group(Item('number_of_cycles'),
-                     Item('amplitude_type'),
-                     Item('loading_range'), show_border=True , label='Cyclic load inputs'),
+                       Group(Item('maximum_slip'),
+                             Item('number_of_increments')),
+                       Group(Item('number_of_cycles'),
+                             Item('amplitude_type'),
+                             Item('loading_range'), show_border=True, label='Cyclic load inputs'),
                        Group(Item('d_t'),
-                     Item('t_max'),
-                     Item('k_max'), show_border=True , label='Solver Settings')),
+                             Item('t_max'),
+                             Item('k_max'), show_border=True, label='Solver Settings')),
                 Group(Item('update', label='Plot Loading senario')),
                 Item('figure', editor=MPLFigureEditor(),
                      dock='horizontal', show_label=False))
-    
-    
-    
+
+
 class TreeStructure(HasTraits):
 
     material = List(value=[Material()])
@@ -190,7 +187,7 @@ class TreeStructure(HasTraits):
 class MainWindow(HasTraits):
 
     mats_eval = Instance(MATSEvalFatigue)
-    
+
     loadingSenario = Instance(LoadingSenario)
 
     fets_eval = Instance(FETS1D52ULRHFatigue)
@@ -237,14 +234,16 @@ class MainWindow(HasTraits):
         self.time_loop.d_t = self.tree.loadingSenario[0].d_t
         self.time_loop.k_max = self.tree.loadingSenario[0].k_max
         self.time_loop.tolerance = self.tree.loadingSenario[0].tolerance
-        
-        
-        self.loadingSenario.maximum_slip = self.tree.loadingSenario[0].maximum_slip
-        self.loadingSenario.number_of_increments = self.tree.loadingSenario[0].number_of_increments
-        
+
+        self.loadingSenario.maximum_slip = self.tree.loadingSenario[
+            0].maximum_slip
+        self.loadingSenario.number_of_increments = self.tree.loadingSenario[
+            0].number_of_increments
+
         # assign the bc
         self.time_stepper.bc_list[1].value = 1
-        self.time_stepper.bc_list[1].time_function = self.tree.loadingSenario[0].time_func
+        self.time_stepper.bc_list[
+            1].time_function = self.tree.loadingSenario[0].time_func
 
         self.draw()
         self.time = 1.00
@@ -254,14 +253,14 @@ class MainWindow(HasTraits):
 
     @cached_property
     def _get_ax1(self):
-        
+
         return self.figure.add_subplot(231)
-    
+
     ax1 = Property()
 
     @cached_property
     def _get_ax2(self):
-        
+
         return self.figure.add_subplot(232)
 
     ax3 = Property()
@@ -289,29 +288,28 @@ class MainWindow(HasTraits):
         return self.figure.add_subplot(236)
 
     def draw(self):
-        
+
         self.U_record, self.F_record, self.sf_record, self.t_record, self.eps_record, self.sig_record, self.w_record = self.time_loop.eval()
         n_dof = 2 * self.time_stepper.domain.n_active_elems + 1
-        
+
         self.ax1.cla()
         l_po, = self.ax1.plot(self.U_record[:, n_dof], self.F_record[:, n_dof])
         marker_po, = self.ax1.plot(
-        self.U_record[-1, n_dof], self.F_record[-1, n_dof], 'ro')
+            self.U_record[-1, n_dof], self.F_record[-1, n_dof], 'ro')
         self.ax1.set_title('pull-out force-displacement curve')
 
-            
         self.ax2.cla()
         X = np.linspace(
             0, self.time_stepper.L_x, self.time_stepper.n_e_x + 1)
         X_ip = np.repeat(X, 2)[1:-1]
         l_w, = self.ax2.plot(X_ip, self.w_record[-1].flatten())
         self.ax2.set_title('Damage')
-        
+
         self.ax3.cla()
         X = np.linspace(
             0, self.time_stepper.L_x, self.time_stepper.n_e_x + 1)
         X_ip = np.repeat(X, 2)[1:-1]
-        
+
         l_sf, = self.ax3.plot(X_ip, self.sf_record[-1, :])
         self.ax3.set_title('shear flow in the bond interface')
 
@@ -331,12 +329,12 @@ class MainWindow(HasTraits):
         l_sig0, = self.ax6.plot(X_ip, self.sig_record[-1][:, :, 0].flatten())
         l_sig1, = self.ax6.plot(X_ip, self.sig_record[-1][:, :, 2].flatten())
         self.ax6.set_title('stress')
-        
-        self.ax2.set_ylim(0,1)
+
+        self.ax2.set_ylim(0, 1)
         self.ax3.set_ylim(np.amin(self.sf_record), np.amax(self.sf_record))
         self.ax4.set_ylim(np.amin(self.U_record), np.amax(self.U_record))
         self.ax6.set_ylim(np.amin(self.sig_record), np.amax(self.sig_record))
-       
+
         self.figure.canvas.draw()
 
     time = Range(0.00, 1.00, value=1.00)
@@ -358,7 +356,7 @@ class MainWindow(HasTraits):
         X_ip = np.repeat(X, 2)[1:-1]
         l_w, = self.ax2.plot(X_ip, self.w_record[idx].flatten())
         self.ax2.set_title('Damage')
-        
+
         self.ax3.cla()
         X = np.linspace(
             0, self.time_stepper.L_x, self.time_stepper.n_e_x + 1)
@@ -382,8 +380,8 @@ class MainWindow(HasTraits):
         l_sig0, = self.ax6.plot(X_ip, self.sig_record[idx][:, :, 0].flatten())
         l_sig1, = self.ax6.plot(X_ip, self.sig_record[idx][:, :, 2].flatten())
         self.ax6.set_title('stress')
-        
-        self.ax2.set_ylim(0,1)
+
+        self.ax2.set_ylim(0, 1)
         self.ax3.set_ylim(np.amin(self.sf_record), np.amax(self.sf_record))
         self.ax4.set_ylim(np.amin(self.U_record), np.amax(self.U_record))
         self.ax6.set_ylim(np.amin(self.sig_record), np.amax(self.sig_record))
@@ -423,7 +421,7 @@ class MainWindow(HasTraits):
 
     view = View(HSplit(Group(VGroup(Item('tree',
                                          editor=tree_editor,
-                                         show_label=False , height=1),
+                                         show_label=False, height=1),
                                     Item('plot', show_label=False)),
                              Item('time', label='t/T_max')),
                        Item('figure', editor=MPLFigureEditor(),
@@ -432,25 +430,26 @@ class MainWindow(HasTraits):
                 resizable=True,
                 height=0.9, width=1.0
                 )
-    
+
 if __name__ == '__main__':
 
     ts = TStepper()
     n_dofs = ts.domain.n_dofs
     tree = TreeStructure()
     loadingSenario = LoadingSenario()
-    
-    ts.bc_list = [BCDof(var='u', dof=0, value=0.0), BCDof(var='u', dof=n_dofs - 1, time_function=loadingSenario.time_func)]
+
+    ts.bc_list = [BCDof(var='u', dof=0, value=0.0), BCDof(
+        var='u', dof=n_dofs - 1, time_function=loadingSenario.time_func)]
     tl = TLoop(ts=ts)
 
     tree = TreeStructure()
     loadingSenario = LoadingSenario()
-    
+
     window = MainWindow(tree=tree,
                         mats_eval=ts.mats_eval,
                         fets_eval=ts.fets_eval,
                         time_stepper=ts,
-                        time_loop=tl , loadingSenario=loadingSenario )
+                        time_loop=tl, loadingSenario=loadingSenario)
 #     window.draw()
 #
     window.configure_traits()
